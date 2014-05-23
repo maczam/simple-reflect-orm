@@ -7,7 +7,7 @@ import java.util.Locale;
 
 /**
  * 日期工具类
- * @author ydhexin@163.com
+ * @author maczam@163.com
  *
  */
 public class DateUtil {
