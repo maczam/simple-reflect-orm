@@ -578,7 +578,7 @@ public class CreateSqlUtil {
      */
     @SuppressWarnings("unchecked")
     private static List<Field> getAnnoFieldList(Class<?> clazz) {
-        return ReflectUtil.getAnnoFieldList(clazz, new Class[]{Column.class});
+        return ReflectUtil.getAnnoFieldList(clazz, Column.class);
     }
 
     /**
@@ -610,12 +610,12 @@ public class CreateSqlUtil {
             columnName = field.getName().toUpperCase();
         }
 
-        if (ColumnType.time.equals(columnType)) {
+        if (ColumnType.Time.equals(columnType)) {
             sb.append("TO_CHAR(");
             sb.append(columnName);
             sb.append(",'YYYY-MM-DD HH24:MI:SS') AS ");
             sb.append(columnName);
-        } else if (ColumnType.date.equals(columnType)) {
+        } else if (ColumnType.Date.equals(columnType)) {
             sb.append("TO_CHAR(");
             sb.append(columnName);
             sb.append(",'YYYY-MM-DD') AS ");
@@ -642,15 +642,15 @@ public class CreateSqlUtil {
             // 转换值
             ColumnType columnType = column.type();
             // 字符串
-            if (ColumnType.varchar.equals(columnType)) {
+            if (ColumnType.Varchar.equals(columnType)) {
                 valueSb.append("'").append(value).append("'");
                 // 时间
-            } else if (ColumnType.time.equals(columnType)) {
+            } else if (ColumnType.Time.equals(columnType)) {
                 valueSb.append("TO_DATE('");
                 valueSb.append(DateUtil.formatDate(value, "yyyy-MM-dd HH:mm:ss"));
                 valueSb.append("','YYYY-MM-DD HH24:MI:SS')");
                 // 日期
-            } else if (ColumnType.date.equals(columnType)) {
+            } else if (ColumnType.Date.equals(columnType)) {
                 valueSb.append("TO_DATE('");
                 valueSb.append(DateUtil.formatDate(value, "yyyy-MM-dd"));
                 valueSb.append("','YYYY-MM-DD')");

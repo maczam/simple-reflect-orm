@@ -36,5 +36,5 @@ public @interface Column {
 	 * 
 	 * @return
 	 */
-	public ColumnType type() default ColumnType.varchar;
+	public ColumnType type() default ColumnType.Varchar;
 }

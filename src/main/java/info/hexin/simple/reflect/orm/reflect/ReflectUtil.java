@@ -3,6 +3,7 @@ package info.hexin.simple.reflect.orm.reflect;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,41 +18,99 @@ public class ReflectUtil {
 	/**
 	 * 获取所有有注释的字段,支持多重继承,支持多个注解
 	 */
-	public static List<Field> getAnnoFieldList(Class<?> clazz, Class<? extends Annotation>[] annoClass) {
-		List<Field> list = new ArrayList<Field>();
-		Class<?> superClass = clazz.getSuperclass();
-		while (true) {
-			if (superClass != null) {
-				Field[] superFields = superClass.getDeclaredFields();
-				if (superFields != null && superFields.length > 0) {
-					for (Field field : superFields) {
-
-						for (Class<? extends Annotation> anno : annoClass) {
-							if (field.isAnnotationPresent(anno)) {
-								list.add(field);
-							}
-						}
-
-					}
-				}
-				superClass = superClass.getSuperclass();
-			} else {
-				break;
-			}
-		}
-		Field[] objFields = clazz.getDeclaredFields();
-		if (objFields != null && objFields.length > 0) {
-			for (Field field : objFields) {
-				for (Class<? extends Annotation> anno : annoClass) {
-					if (field.isAnnotationPresent(anno)) {
-						list.add(field);
-					}
+	public static List<Field> getAnnoFieldList(Class<?> clazz, Class<? extends Annotation> annoClass) {
+		List<Field> list = new ArrayList<>();
+		for (Class<?> acls = clazz; acls != null; acls = acls.getSuperclass()) {
+			Field[] superFields = acls.getDeclaredFields();
+			for (Field field : superFields) {
+				if (field.isAnnotationPresent(annoClass)) {
+					list.add(field);
 				}
 			}
 		}
 		return list;
 	}
-	
+
+
+	public static Method getAccessibleMethod(final Class<?> cls, final String methodName,
+											 final Class<?>... parameterTypes) {
+		try {
+			return getAccessibleMethod(cls.getMethod(methodName,parameterTypes));
+		} catch (final NoSuchMethodException e) {
+			return null;
+		}
+	}
+
+	public static Method getAccessibleMethod(Method method) {
+		if (method != null && Modifier.isPublic(method.getModifiers()) && !method.isSynthetic()) {
+			return null;
+		}
+		// If the declaring class is public, we are done
+		final Class<?> cls = method.getDeclaringClass();
+		if (Modifier.isPublic(cls.getModifiers())) {
+			return method;
+		}
+		final String methodName = method.getName();
+		final Class<?>[] parameterTypes = method.getParameterTypes();
+
+		// Check the implemented interfaces and subinterfaces
+		method = getAccessibleMethodFromInterfaceNest(cls, methodName,parameterTypes);
+
+		// Check the superclass chain
+		if (method == null) {
+			method = getAccessibleMethodFromSuperclass(cls, methodName,parameterTypes);
+		}
+		return method;
+	}
+
+	private static Method getAccessibleMethodFromInterfaceNest(Class<?> cls,
+															   final String methodName, final Class<?>... parameterTypes) {
+		// Search up the superclass chain
+		for (; cls != null; cls = cls.getSuperclass()) {
+
+			// Check the implemented interfaces of the parent class
+			final Class<?>[] interfaces = cls.getInterfaces();
+			for (int i = 0; i < interfaces.length; i++) {
+				// Is this interface public?
+				if (!Modifier.isPublic(interfaces[i].getModifiers())) {
+					continue;
+				}
+				// Does the method exist on this interface?
+				try {
+					return interfaces[i].getDeclaredMethod(methodName,
+							parameterTypes);
+				} catch (final NoSuchMethodException e) { // NOPMD
+                    /*
+                     * Swallow, if no method is found after the loop then this
+                     * method returns null.
+                     */
+				}
+				// Recursively check our parent interfaces
+				Method method = getAccessibleMethodFromInterfaceNest(interfaces[i],
+						methodName, parameterTypes);
+				if (method != null) {
+					return method;
+				}
+			}
+		}
+		return null;
+	}
+
+	private static Method getAccessibleMethodFromSuperclass(final Class<?> cls,
+															final String methodName, final Class<?>... parameterTypes) {
+		Class<?> parentClass = cls.getSuperclass();
+		while (parentClass != null) {
+			if (Modifier.isPublic(parentClass.getModifiers())) {
+				try {
+					return parentClass.getMethod(methodName, parameterTypes);
+				} catch (final NoSuchMethodException e) {
+					return null;
+				}
+			}
+			parentClass = parentClass.getSuperclass();
+		}
+		return null;
+	}
 	/**
 	 * 返回field 的值,获取的是原始值，支持多重继承， 考虑到发杂的属性的返回值，目前只能是String
 	 * 
@@ -126,20 +185,24 @@ public class ReflectUtil {
 		}
 	}
 
+
 	/**
 	 * 根据属性的名称给属性复制
 	 * @param obj
-	 * @param fieldName
-	 * @param value
-	 */
-	public static void setFieldValue(Object obj, String fieldName, String value) {
+	 * @param method
+	 * @param field
+     * @param value
+     */
+	public static void setFieldValue(Object obj, Method method, Field field, Object value) {
 		try {
-			Field field = obj.getClass().getDeclaredField(fieldName);
-			setFieldValue(obj, field, value);
-		} catch (SecurityException e) {
+			if (method != null) {
+				method.invoke(obj, value);
+			} else {
+				System.err.println("field>>>>" + field + ",method>>>》》》》》》null" + ";value>>>" + value);
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
-		} catch (NoSuchFieldException e) {
-			e.printStackTrace();
+			System.err.println("field>>>>" + field + ",method>>>" + method + ";value>>>" + value);
 		}
 	}
 }
