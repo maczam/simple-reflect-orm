@@ -17,7 +17,8 @@ public class TestSelectSql {
     
     @Test
     public void test2(){
-        String id = CreateSqlUtil.deleteSql(AA.class, S.of("id", "1"));
+        AA aa = new AA();
+        String id = CreateSqlUtil.deleteSql(aa, S.of("id", "1"));
         System.out.println(id);
 
     }
